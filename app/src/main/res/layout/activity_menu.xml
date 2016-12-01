@@ -109,7 +109,7 @@
                 android:layout_marginRight="25dp"
                 android:gravity="center_horizontal"
                 android:orientation="horizontal"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -174,7 +174,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:visibility="visible">
+                android:visibility="gone">
 
                 <LinearLayout
                     android:id="@+id/itemBackground"
@@ -274,6 +274,21 @@
                 </LinearLayout>
 
             </LinearLayout>
+
+            <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:id="@+id/item_list"
+                android:name="cs166.cafe.ItemListFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="16dp"
+                android:layout_marginRight="16dp"
+                app:layoutManager="LinearLayoutManager"
+                tools:context="cs166.cafe.ItemListActivity"
+                android:visibility="gone"
+                tools:listitem="@layout/item_list_content" />
+
 
         </LinearLayout>
 
