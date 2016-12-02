@@ -18,7 +18,7 @@
 
     <string name="title_activity_menu">MenuActivity</string>
     <string name="dummy_button">Logout</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="dummy_content">DUMMY CONTENT</string>
 
     <string name="my_account">My Account</string>
     <string name="search_item">Search By Item Name</string>

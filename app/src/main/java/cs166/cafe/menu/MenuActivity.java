@@ -3,6 +3,7 @@ package cs166.cafe.menu;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.opengl.Visibility;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -15,11 +16,15 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.List;
 
 import cs166.cafe.Cafe;
 import cs166.cafe.LoginActivity;
@@ -36,14 +41,29 @@ public class MenuActivity extends AppCompatActivity {
     private TextView myAccountView;
     private LinearLayout mMainMenu;
     private LinearLayout itemResult;
+    private LinearLayout itemBackground;
     private EditText itemName;
     private Button logOut;
+    private Button backButton;
+    private ImageView searchItem;
+    private ImageView searchType;
     private String URL;
     private String item;
     private String type;
+    private String description;
+    private String price;
+    private boolean searchItemName = true;
+    private boolean searchItemType = false;
     private boolean showItem = false;
     private boolean showMainMenu = true;
+    private boolean showTypeResult = false;
     private String uInput;
+    private int searchInt = 1;
+
+    private TextView iName;
+    private TextView iType;
+    private TextView iDescription;
+    private TextView iPrice;
 
     class queryDB implements Runnable {
         Cafe esql = null;
@@ -54,36 +74,80 @@ public class MenuActivity extends AppCompatActivity {
         }
 
         public void run() {
-            // compute primes larger than minPrime
 
+            switch (action) {
 
-            String query = String.format("SELECT * FROM Menu WHERE Menu.itemName = '%s'", uInput);
-            try {
-                Class.forName ("org.postgresql.Driver").newInstance ();
-                String dbname = "mydb";
-                String dbport = "5432";
+                case 1:
+                String query = String.format("SELECT * FROM Menu WHERE Menu.itemName = '%s'", uInput);
+                try {
+                    Class.forName("org.postgresql.Driver").newInstance();
+                    String dbname = "mydb";
+                    String dbport = "5432";
 
-                esql = new Cafe (dbname, dbport);
+                    esql = new Cafe(dbname, dbport);
 
-                if( (esql.executeQuery(query)) <= 0) {
-                    showMainMenu = true;
-                    showItem = false;
+                    if ((esql.executeQuery(query)) <= 0) {
+                        showMainMenu = true;
+                        showItem = false;
+                    } else {
+                        showItem = true;
+                        showMainMenu = false;
+                        List<List<String>> l = esql.executeQueryAndReturnResult(query);
+
+                        item = l.get(0).get(0).toString().trim();
+                        type = l.get(0).get(1).toString().trim();
+                        price = l.get(0).get(2).toString().trim();
+                        description = l.get(0).get(3).toString().trim();
+                        URL = l.get(0).get(4).toString().trim();
+
+                    }
+
+                    esql.cleanup();
+
+                } catch (InstantiationException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
-                else {
-                    showItem = true;
-                    showMainMenu = false;
-                }
+                    break;
 
-                esql.cleanup();
+                case 2:
 
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (SQLException e) {
-                e.printStackTrace();
+                    String typeQuery = String.format("SELECT * FROM Menu WHERE Menu.type = '%s'", uInput);
+                    try {
+                        Class.forName("org.postgresql.Driver").newInstance();
+                        String dbname = "mydb";
+                        String dbport = "5432";
+
+                        esql = new Cafe(dbname, dbport);
+
+                        if ((esql.executeQuery(typeQuery)) <= 0) {
+                            showMainMenu = true;
+                            showItem = false;
+                            showTypeResult = false;
+                        } else {
+                            showItem = false;
+                            showMainMenu = false;
+                            showTypeResult = true;
+                        }
+
+                        esql.cleanup();
+
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
+                    break;
             }
         }
     }
@@ -173,6 +237,16 @@ public class MenuActivity extends AppCompatActivity {
         itemName = (EditText) findViewById(R.id.item_search);
         mMainMenu = (LinearLayout) findViewById(R.id.main_menu_layout);
         logOut = (Button) findViewById(R.id.dummy_button);
+        searchItem = (ImageView) findViewById(R.id.itemSearch);
+        searchType = (ImageView) findViewById(R.id.searchType);
+        itemBackground = (LinearLayout) findViewById(R.id.itemBackground);
+
+        iName = (TextView) findViewById(R.id.item_name);
+        iType = (TextView) findViewById(R.id.item_type);
+        iDescription = (TextView) findViewById(R.id.item_description);
+        iPrice = (TextView) findViewById(R.id.item_price);
+
+        backButton = (Button) findViewById(R.id.back_button);
 
         mUserName.setText(LoginActivity.getUserName());
 
@@ -193,30 +267,123 @@ public class MenuActivity extends AppCompatActivity {
             }
         });
 
+        // Back Button
+        backButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMainMenu = true;
+                showItem = false;
+                showTypeResult = false;
+
+                updateView();
+            }
+        });
+
+        // Set Listener for Item Type Button
+        searchType.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                searchItemName = false;
+                searchItemType = true;
+
+                updateView();
+
+            }
+        });
+
+        searchItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                searchItemName = true;
+                searchItemType = false;
+
+                updateView();
+            }
+        });
+
         itemName.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if ((keyEvent != null && (keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER)) || (i == EditorInfo.IME_ACTION_DONE) || (keyEvent.getKeyCode() == EditorInfo.IME_ACTION_DONE)) {
+                if ((keyEvent != null && (keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER)) || (i == EditorInfo.IME_ACTION_DONE)) {
+
+                    if (searchItemName) {
+
+                        Log.d("Search by Item Name", "");
+
+                        uInput = itemName.getText().toString();
+
+                        queryDB qb = new queryDB(searchInt);
+
+                        Thread t = new Thread(qb);
+                        t.start();
+                        try {
+                            t.join();
+
+                            if (showMainMenu) {
+                                Context context = getApplicationContext();
+                                CharSequence text = "Cannot find Item!";
+                                int duration = Toast.LENGTH_SHORT;
+
+                                Toast toast = Toast.makeText(context, text, duration);
+                                toast.show();
+
+                                showMainMenu = true;
+                                showItem = false;
+
+                                updateView();
+                            }
+
+                            else {
+                                try {
+                                    final InputStream is = getApplicationContext().getAssets().open(URL);
+                                    final Drawable iBackground = Drawable.createFromStream(is, null);
+
+                                    if(iBackground != null) {
+                                        itemBackground.setBackground(iBackground);
+                                        itemBackground.setAlpha((float) 0.8);
+
+                                        iName.setText(item);
+                                        iType.setText(type);
+                                        iDescription.setText(description);
+                                        iPrice.setText(price);
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                                mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
+                                itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
+                            }
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
+                if(searchItemType) {
                     uInput = itemName.getText().toString();
 
-                    queryDB qb = new queryDB(1);
+                    Log.d("user input", uInput);
+                    Log.d("Search by Item Type", "");
+
+                    queryDB qb = new queryDB(searchInt);
 
                     Thread t = new Thread(qb);
                     t.start();
                     try {
                         t.join();
 
-                        if(showMainMenu) {
+                        if (showMainMenu) {
                             Context context = getApplicationContext();
-                            CharSequence text = "Cannot find Item!";
+                            CharSequence text = "Cannot find Type!";
                             int duration = Toast.LENGTH_SHORT;
 
                             Toast toast = Toast.makeText(context, text, duration);
                             toast.show();
                         }
 
-                        mMainMenu.setVisibility( showMainMenu ? View.VISIBLE : View.GONE);
-                        itemResult.setVisibility( showItem ? View.VISIBLE : View.GONE);
+                        mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
+                        itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -239,6 +406,19 @@ public class MenuActivity extends AppCompatActivity {
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
         findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+    }
+
+    private void updateView() {
+        mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
+        itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
+        if(searchItemName) {
+            itemName.setHint(R.string.search_by_item);
+            searchInt = 1;
+        }
+        if(searchItemType) {
+            itemName.setHint(R.string.search_by_type);
+            searchInt = 2;
+        }
     }
 
     @Override
