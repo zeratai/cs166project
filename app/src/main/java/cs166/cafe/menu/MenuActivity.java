@@ -1,6 +1,7 @@
 package cs166.cafe.menu;
 
 import android.annotation.SuppressLint;
+import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -18,16 +19,19 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import cs166.cafe.Cafe;
@@ -74,9 +78,15 @@ public class MenuActivity extends AppCompatActivity {
     private TextView iDescription;
     private TextView iPrice;
 
-    private RecyclerView itemList;
+    private ListView itemListView;
+
+    private LinearLayout itemList;
 
     private List<List<String>> itemTypes;
+
+    private ArrayList<String> itemTypeNames = new ArrayList<String>();
+
+    private ArrayAdapter<String> adapter;
 
     private boolean mTwoPane;
 
@@ -264,11 +274,17 @@ public class MenuActivity extends AppCompatActivity {
         iDescription = (TextView) findViewById(R.id.item_description);
         iPrice = (TextView) findViewById(R.id.item_price);
 
+        itemList = (LinearLayout) findViewById(R.id.item_list);
+
+        itemListView = (ListView) findViewById(R.id.item_type_list);
+
         backButton = (Button) findViewById(R.id.back_button);
-        itemList = (RecyclerView) findViewById(R.id.item_list);
 
         mUserName.setText(LoginActivity.getUserName());
 
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
+
+        ((ListView) findViewById(R.id.item_type_list)).setAdapter(adapter);
 
         // Set up the user interaction to manually show or hide the system UI.
         myAccountView.setOnClickListener(new View.OnClickListener() {
@@ -406,9 +422,22 @@ public class MenuActivity extends AppCompatActivity {
                         mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
                         itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
 
-                        setupRecyclerView((RecyclerView) itemList);
-
                         itemName.getText().clear();
+
+                        // Deallocate current itemTypes array
+                        itemTypeNames.clear();
+                        adapter.clear();
+
+                        for(int j = 0; j < itemTypes.size(); j++) {
+                            item = itemTypes.get(j).get(0).toString().trim();
+
+                            itemTypeNames.add(item);
+                        }
+
+                        adapter.addAll(itemTypeNames);
+                        adapter.notifyDataSetChanged();
+
+                        updateView();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -433,85 +462,11 @@ public class MenuActivity extends AppCompatActivity {
         findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
     }
 
-    private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
-        recyclerView.setAdapter(new MenuActivity.SimpleItemRecyclerViewAdapter(menuContent.ITEMS));
-    }
-
-    public class SimpleItemRecyclerViewAdapter
-            extends RecyclerView.Adapter<MenuActivity.SimpleItemRecyclerViewAdapter.ViewHolder> {
-
-        private final List<menuContent.DummyItem> mValues;
-
-        public SimpleItemRecyclerViewAdapter(List<menuContent.DummyItem> items) {
-            mValues = items;
-        }
-
-        @Override
-        public ItemListActivity.SimpleItemRecyclerViewAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_list_content, parent, false);
-            return new ItemListActivity.SimpleItemRecyclerViewAdapter.ViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
-            holder.mItem = mValues.get(position);
-            //holder.mIdView.setText(mValues.get(position).id);
-            holder.mContentView.setText(mValues.get(position).content);
-
-            holder.mView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mTwoPane) {
-                        Bundle arguments = new Bundle();
-                        arguments.putString(ItemDetailFragment.ARG_ITEM_ID, holder.mItem.id);
-                        ItemDetailFragment fragment = new ItemDetailFragment();
-                        fragment.setArguments(arguments);
-                        getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.item_detail_container, fragment)
-                                .commit();
-                    } else {
-                        Context context = v.getContext();
-                        Intent intent = new Intent(context, ItemDetailActivity.class);
-                        intent.putExtra(ItemDetailFragment.ARG_ITEM_ID, holder.mItem.id);
-
-                        context.startActivity(intent);
-                    }
-                }
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return mValues.size();
-        }
-
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            public final View mView;
-            //public final TextView mIdView;
-            public final TextView mContentView;
-            public menuContent.DummyItem mItem;
-
-            public ViewHolder(View view) {
-                super(view);
-                mView = view;
-                //mIdView = (TextView) view.findViewById(R.id.id);
-                mContentView = (TextView) view.findViewById(R.id.content);
-            }
-
-            @Override
-            public String toString() {
-                return super.toString() + " '" + mContentView.getText() + "'";
-            }
-        }
-    }
-
     private void updateView() {
 
         mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
         itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
-        itemList.setVisibility(showTypeResult ? View.VISIBLE : View.GONE);
-
+        itemList.setVisibility( showTypeResult ? View.VISIBLE : View.GONE);
         if(searchItemName) {
             itemName.setHint(R.string.search_by_item);
             searchInt = 1;

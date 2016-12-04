@@ -52,7 +52,7 @@ public class Cafe {
             String url = "jdbc:postgresql://localhost:" + dbport + "/" + dbname;
             System.out.println ("Connection URL: " + url + "\n");
 
-            String external = "jdbc:postgresql://10.0.0.5:" + dbport + "/" + dbname;
+            String external = "jdbc:postgresql://192.168.42.253:" + dbport + "/" + dbname;
 
             // obtain a physical connection
             this._connection = DriverManager.getConnection(external,"justinmoy", "");
