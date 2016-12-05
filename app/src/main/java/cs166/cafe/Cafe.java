@@ -2,6 +2,7 @@ package cs166.cafe;
 
 /**
  * Created by justinmoy on 11/29/16.
+ * Partner by codyfalzone
  */
 
 import android.widget.EditText;
@@ -52,7 +53,7 @@ public class Cafe {
             String url = "jdbc:postgresql://localhost:" + dbport + "/" + dbname;
             System.out.println ("Connection URL: " + url + "\n");
 
-            String external = "jdbc:postgresql://192.168.42.253:" + dbport + "/" + dbname;
+            String external = "jdbc:postgresql://localhost:" + dbport + "/" + dbname;
 
             // obtain a physical connection
             this._connection = DriverManager.getConnection(external,"justinmoy", "");

@@ -24,4 +24,9 @@
     <string name="search_item">Search By Item Name</string>
     <string name="search_by_item">Search By Item Name</string>
     <string name="search_by_type">Search By Item Type</string>
+    <string name="search_by_order">Search By Order ID</string>
+
+    <string name="current_orders">View Current Orders</string>
+    <string name="order_status">View Order Status</string>
+    <string name="update_order">Update Order</string>
 </resources>

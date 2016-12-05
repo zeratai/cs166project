@@ -55,21 +55,29 @@ public class MenuActivity extends AppCompatActivity {
     private LinearLayout mMainMenu;
     private LinearLayout itemResult;
     private LinearLayout itemBackground;
+    private LinearLayout orderMenuLayout;
     private EditText itemName;
     private Button logOut;
     private Button backButton;
+    private Button backButtonOrder;
     private ImageView searchItem;
     private ImageView searchType;
+    private ImageView searchOrder;
+    private ImageView curOrders;
     private String URL;
     private String item;
     private String type;
     private String description;
     private String price;
+    private String orderId;
     private boolean searchItemName = true;
     private boolean searchItemType = false;
+    private boolean currentOrders = false;
     private boolean showItem = false;
     private boolean showMainMenu = true;
     private boolean showTypeResult = false;
+    private boolean searchOrderId = false;
+    private boolean showOrderMenu = false;
     private String uInput;
     private int searchInt = 1;
 
@@ -87,8 +95,6 @@ public class MenuActivity extends AppCompatActivity {
     private ArrayList<String> itemTypeNames = new ArrayList<String>();
 
     private ArrayAdapter<String> adapter;
-
-    private boolean mTwoPane;
 
     class queryDB implements Runnable {
         Cafe esql = null;
@@ -114,9 +120,11 @@ public class MenuActivity extends AppCompatActivity {
                     if ((esql.executeQuery(query)) <= 0) {
                         showMainMenu = true;
                         showItem = false;
+                        showOrderMenu = false;
                     } else {
                         showItem = true;
                         showMainMenu = false;
+                        showOrderMenu = false;
                         List<List<String>> l = esql.executeQueryAndReturnResult(query);
 
                         item = l.get(0).get(0).toString().trim();
@@ -154,10 +162,12 @@ public class MenuActivity extends AppCompatActivity {
                             showMainMenu = true;
                             showItem = false;
                             showTypeResult = false;
+                            showOrderMenu = false;
                         } else {
                             showItem = false;
                             showMainMenu = false;
                             showTypeResult = true;
+                            showOrderMenu = false;
 
                             itemTypes = esql.executeQueryAndReturnResult(typeQuery);
                         }
@@ -175,6 +185,87 @@ public class MenuActivity extends AppCompatActivity {
                     }
 
                     break;
+
+                case 3:
+                    // Check order authenticity
+                    String orderQuery = String.format("SELECT Orders.login FROM Orders WHERE orderid = '%s'", uInput);
+                    try {
+                        Class.forName("org.postgresql.Driver").newInstance();
+                        String dbname = "mydb";
+                        String dbport = "5432";
+
+                        esql = new Cafe(dbname, dbport);
+
+                        if(esql.executeQuery(orderQuery) > 0) {
+                            String cOrder = (esql.executeQueryAndReturnResult(orderQuery)).get(0).get(0).toString().trim();
+                            if(cOrder.equals(LoginActivity.getUserName())) {
+                                showOrderMenu = true;
+                                showItem = false;
+                                showTypeResult = false;
+                                showMainMenu = false;
+                            }
+                            else {
+                                showOrderMenu = false;
+                                showItem = false;
+                                showTypeResult = false;
+                                showMainMenu = true;
+                            }
+                        }
+                        else {
+                            showOrderMenu = false;
+                            showItem = false;
+                            showTypeResult = false;
+                            showMainMenu = true;
+                        }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    break;
+
+                case 4:
+
+                    String showOrders = String.format("SELECT * FROM Orders WHERE login = '%s' ORDER BY orderid DESC LIMIT 5", LoginActivity.getUserName());
+                    try {
+                        Class.forName("org.postgresql.Driver").newInstance();
+                        String dbname = "mydb";
+                        String dbport = "5432";
+
+                        esql = new Cafe(dbname, dbport);
+
+                        if ((esql.executeQuery(showOrders)) <= 0) {
+                            showMainMenu = false;
+                            showItem = false;
+                            showTypeResult = false;
+                            showOrderMenu = true;
+                        } else {
+                            showItem = false;
+                            showMainMenu = false;
+                            showTypeResult = true;
+                            showOrderMenu = false;
+
+                            itemTypes = esql.executeQueryAndReturnResult(showOrders);
+                        }
+
+                        esql.cleanup();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    break;
+
             }
 
         }
@@ -267,7 +358,11 @@ public class MenuActivity extends AppCompatActivity {
         logOut = (Button) findViewById(R.id.dummy_button);
         searchItem = (ImageView) findViewById(R.id.itemSearch);
         searchType = (ImageView) findViewById(R.id.searchType);
+        searchOrder = (ImageView) findViewById(R.id.search_by_order);
         itemBackground = (LinearLayout) findViewById(R.id.itemBackground);
+        orderMenuLayout = (LinearLayout) findViewById(R.id.order_menu_layout);
+        curOrders = (ImageView) findViewById(R.id.CurrentOrders);
+
 
         iName = (TextView) findViewById(R.id.item_name);
         iType = (TextView) findViewById(R.id.item_type);
@@ -279,6 +374,8 @@ public class MenuActivity extends AppCompatActivity {
         itemListView = (ListView) findViewById(R.id.item_type_list);
 
         backButton = (Button) findViewById(R.id.back_button);
+
+        backButtonOrder = (Button) findViewById(R.id.back_button_orders);
 
         mUserName.setText(LoginActivity.getUserName());
 
@@ -309,6 +406,19 @@ public class MenuActivity extends AppCompatActivity {
                 showMainMenu = true;
                 showItem = false;
                 showTypeResult = false;
+                showOrderMenu = false;
+
+                updateView();
+            }
+        });
+
+        backButtonOrder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMainMenu = true;
+                showItem = false;
+                showTypeResult = false;
+                showOrderMenu = false;
 
                 updateView();
             }
@@ -320,6 +430,7 @@ public class MenuActivity extends AppCompatActivity {
             public void onClick(View view) {
                 searchItemName = false;
                 searchItemType = true;
+                searchOrderId = false;
 
                 updateView();
 
@@ -331,8 +442,78 @@ public class MenuActivity extends AppCompatActivity {
             public void onClick(View view) {
                 searchItemName = true;
                 searchItemType = false;
+                searchOrderId = false;
 
                 updateView();
+            }
+        });
+
+        searchOrder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchItemName = false;
+                searchItemType = false;
+                searchOrderId = true;
+
+                updateView();
+            }
+        });
+
+        curOrders.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                currentOrders = true;
+                searchInt = 4;
+                if(currentOrders) {
+                    uInput = itemName.getText().toString();
+
+                    Log.d("user input", uInput);
+                    Log.d("Search by Item Type", "");
+
+                    queryDB qb = new queryDB(searchInt);
+
+                    Thread t = new Thread(qb);
+                    t.start();
+                    try {
+                        t.join();
+
+                        if (showOrderMenu) {
+                            Context context = getApplicationContext();
+                            CharSequence text = "Cannot find previous orders!";
+                            int duration = Toast.LENGTH_SHORT;
+
+                            Toast toast = Toast.makeText(context, text, duration);
+                            toast.show();
+                        }
+
+                        else {
+                            itemTypeNames.clear();
+                            adapter.clear();
+
+                            for (int j = 0; j < itemTypes.size(); j++) {
+                                String orderIdNum = itemTypes.get(j).get(0).toString().trim();
+                                String loginName = itemTypes.get(j).get(1).toString().trim();
+                                String paid = itemTypes.get(j).get(2).toString().trim();
+                                String timeStamp = itemTypes.get(j).get(3).toString().trim();
+                                String total = itemTypes.get(j).get(4).toString().trim();
+
+                                itemTypeNames.add(orderIdNum);
+                                itemTypeNames.add(loginName);
+                                itemTypeNames.add(paid);
+                                itemTypeNames.add(timeStamp);
+                                itemTypeNames.add(total);
+
+                            }
+
+                            adapter.addAll(itemTypeNames);
+                            adapter.notifyDataSetChanged();
+                        }
+
+                        updateView();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
 
@@ -386,10 +567,9 @@ public class MenuActivity extends AppCompatActivity {
                                     e.printStackTrace();
                                 }
 
-                                mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
-                                itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
-
                                 itemName.getText().clear();
+
+                                updateView();
                             }
                         } catch (InterruptedException e) {
                             e.printStackTrace();
@@ -419,9 +599,6 @@ public class MenuActivity extends AppCompatActivity {
                             toast.show();
                         }
 
-                        mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
-                        itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
-
                         itemName.getText().clear();
 
                         // Deallocate current itemTypes array
@@ -436,6 +613,33 @@ public class MenuActivity extends AppCompatActivity {
 
                         adapter.addAll(itemTypeNames);
                         adapter.notifyDataSetChanged();
+
+                        updateView();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(searchOrderId) {
+                    uInput = itemName.getText().toString();
+
+                    Log.d("user input", uInput);
+                    Log.d("Search by Item Type", "");
+
+                    queryDB qb = new queryDB(searchInt);
+
+                    Thread t = new Thread(qb);
+                    t.start();
+                    try {
+                        t.join();
+
+                        if (showMainMenu) {
+                            Context context = getApplicationContext();
+                            CharSequence text = "Cannot find Order ID! Or, Does that order belong to you?";
+                            int duration = Toast.LENGTH_SHORT;
+
+                            Toast toast = Toast.makeText(context, text, duration);
+                            toast.show();
+                        }
 
                         updateView();
                     } catch (InterruptedException e) {
@@ -466,7 +670,9 @@ public class MenuActivity extends AppCompatActivity {
 
         mMainMenu.setVisibility(showMainMenu ? View.VISIBLE : View.GONE);
         itemResult.setVisibility(showItem ? View.VISIBLE : View.GONE);
-        itemList.setVisibility( showTypeResult ? View.VISIBLE : View.GONE);
+        itemList.setVisibility(showTypeResult ? View.VISIBLE : View.GONE);
+        orderMenuLayout.setVisibility(showOrderMenu ? View.VISIBLE : View.GONE);
+
         if(searchItemName) {
             itemName.setHint(R.string.search_by_item);
             searchInt = 1;
@@ -474,6 +680,10 @@ public class MenuActivity extends AppCompatActivity {
         if(searchItemType) {
             itemName.setHint(R.string.search_by_type);
             searchInt = 2;
+        }
+        if(searchOrderId) {
+            itemName.setHint(R.string.search_by_order);
+            searchInt = 3;
         }
     }
 
